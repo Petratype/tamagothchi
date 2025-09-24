@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tamagothchi Ghost</title>
+  <meta name="description" content="Tamagothchi Ghost — a tiny pixel pet with hunger, happiness and energy." />
+  <style>
+    /* --- vars / base --- */
+    :root{
+      --bg1:#060008;
+      --bg2:#120016;
+      --neon:#32cd32;
+      --neon-2:#58d658;
+      --muted:#8a8a8a;
+      --accent:#a04bff;
+    }
+    html,body{height:100%;margin:0}
+    body{
+      font-family: monospace;
+      background:
+        radial-gradient(1000px 600px at 10% 10%, rgba(160,75,255,0.06), transparent),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:var(--neon);
+      display:flex;flex-direction:column;align-items:center;padding:18px;box-sizing:border-box;
+      min-height:100vh;overflow:hidden;
+    }
+
+    /* --- HUD / stats --- */
+    .stats{display:flex;gap:26px;margin-bottom:18px;flex-wrap:wrap;justify-content:center}
+    .stat{text-align:center;font-size:0.98rem;display:flex;flex-direction:column;align-items:center;gap:12px}
+    .stat-label{margin-bottom:8px}
+    .bar{width:132px;height:16px;border-radius:8px;border:1px solid rgba(50,205,50,0.12);overflow:hidden;background:transparent}
+    .fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon-2));width:50%;transition:width .25s linear}
+    .gray{color:var(--muted) !important;border-color:var(--muted) !important;background:var(--muted) !important}
+
+    /* --- pet --- */
+    .pet-container{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;margin:6px 0}
+    #pet{width:auto;max-width:48vw;max-height:36vh;image-rendering:pixelated;transition:opacity .45s ease, transform .35s ease;filter: drop-shadow(0 6px 8px rgba(0,0,0,.7));border-radius:8px;opacity:0.98}
+    @keyframes petDance {0%{transform:translateY(0)}25%{transform:translateY(-8px) rotate(-2deg)}50%{transform:translateY(0) rotate(2deg)}75%{transform:translateY(-6px) rotate(-1.5deg)}100%{transform:translateY(0)}}
+    .dance { animation: petDance .7s ease; }
+
+    /* --- controls / buttons --- */
+    .controls{margin-top:14px;margin-bottom:22px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    button{background:transparent;color:var(--neon);border:2px solid rgba(154,255,154,0.18);padding:.9em 1.2em;cursor:pointer;font-weight:700;font-size:1rem;border-radius:12px;min-width:120px;transition:transform .12s,box-shadow .12s,background .12s}
+    button:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(160,75,255,0.06);background:linear-gradient(180deg, rgba(160,75,255,0.04), rgba(160,75,255,0.01))}
+    .btn-press{ transform: translateY(2px) scale(.98); box-shadow: inset 0 6px 14px rgba(0,0,0,0.35); }
+
+    /* --- music top-right --- */
+    #musicToggle{position:fixed;top:12px;right:12px;z-index:60;min-width:86px;padding:.6em .9em;border-radius:10px;font-size:0.95rem;background:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(160,75,255,0.02));border:1px solid rgba(154,255,154,0.12);box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+
+    /* --- messages --- */
+    #status{margin-top:6px;font-weight:800;font-size:1.12rem;color:#eaffea;text-align:center;text-shadow:0 0 12px rgba(50,205,50,0.12),0 2px 6px rgba(0,0,0,0.6);transition:margin-top .22s}
+    #hint{margin-top:10px;color:var(--muted);font-size:0.98rem;text-align:center;opacity:0;transform:translateY(6px);transition:all .28s ease;pointer-events:none}
+    #hint.visible{opacity:1;transform:translateY(0);color:#cfdccf;text-shadow:0 0 6px rgba(50,205,50,0.06)}
+    .dead-gap{margin-top:48px !important}
+
+    /* --- start overlay: heavy blur, dim everything --- */
+    #startOverlay {
+      position:fixed; inset:0; z-index:120;
+      display:flex; align-items:center; justify-content:center;
+      /* darken + semi-transparent so backdrop-filter blurs page behind */
+      background: rgba(4,4,6,0.62);
+      -webkit-backdrop-filter: blur(16px) saturate(0.4) brightness(0.45);
+      backdrop-filter: blur(16px) saturate(0.4) brightness(0.45);
+      pointer-events:auto;
+    }
+
+    /* start card centered and clear (not blurred) */
+    .start-card {
+      position:relative; z-index:122;
+      background: rgba(8,8,10,0.88);
+      border: 1px solid rgba(154,255,154,0.08);
+      padding:24px 28px; border-radius:14px; text-align:center;
+      color:var(--neon); box-shadow: 0 18px 60px rgba(0,0,0,0.8);
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+
+    .start-title { font-size:1.2rem; font-weight:900; margin-bottom:6px; letter-spacing:.6px; }
+    .start-sub { color:var(--muted); margin-bottom:12px; font-weight:600; }
+
+    .start-btn {
+      display:inline-block;
+      padding:14px 26px; font-size:1.08rem; font-weight:900;
+      border-radius:14px; border:0; cursor:pointer;
+      color:#08100a;
+      background: linear-gradient(180deg, var(--neon), var(--neon-2));
+      box-shadow: 0 14px 40px rgba(50,205,50,0.12), 0 0 28px rgba(50,205,50,0.06);
+      transition: transform .14s ease, box-shadow .14s ease;
+      text-transform:uppercase;
+    }
+    .start-btn:active{ transform:translateY(2px) scale(.995) }
+    /* soft pulse to draw attention */
+    .start-btn.pulse{ animation: startPulse 1.6s ease-in-out infinite }
+    @keyframes startPulse{
+      0%{ box-shadow: 0 10px 30px rgba(50,205,50,0.10), 0 0 18px rgba(50,205,50,0.03); transform: scale(1) }
+      50%{ box-shadow: 0 18px 46px rgba(50,205,50,0.16), 0 0 30px rgba(50,205,50,0.08); transform: scale(1.04) }
+      100%{ box-shadow: 0 10px 30px rgba(50,205,50,0.10), 0 0 18px rgba(50,205,50,0.03); transform: scale(1) }
+    }
+
+    /* fade out overlay */
+    .overlay-fade { animation: overlayFade .6s ease forwards }
+    @keyframes overlayFade{ to{ opacity:0; transform: scale(0.995); visibility:hidden } }
+
+    @media (max-width:520px){ .bar{width:98px} button{min-width:92px;padding:.7em .9em;font-size:.95rem} #musicToggle{top:8px;right:8px;min-width:76px;padding:.5em .7em} }
+  </style>
+</head>
+<body>
+  <!-- music -->
+  <button id="musicToggle">♪ Music: Off</button>
+
+  <!-- HUD -->
+  <div class="stats" role="status" aria-live="polite">
+    <div class="stat">
+      <div class="stat-label" id="hunger-label">Hunger</div>
+      <div class="bar"><div id="hunger-fill" class="fill"></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label" id="happiness-label">Happiness</div>
+      <div class="bar"><div id="happiness-fill" class="fill"></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label" id="energy-label">Energy</div>
+      <div class="bar"><div id="energy-fill" class="fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Pet -->
+  <div class="pet-container">
+    <img id="pet" src="baby-ghost-mov.gif" alt="Baby Ghost" />
+    <p id="caption" style="display:none;color:var(--muted);font-style:italic;margin:0">Here lies your goth…</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+    <button id="feedBtn">Feed</button>
+    <button id="playBtn">Play</button>
+    <button id="sleepBtn">Sleep</button>
+  </div>
+
+  <div id="restart" style="display:none;margin-top:12px;">
+    <button id="restartBtn">☠️ Rise Again</button>
+  </div>
+
+  <p id="status">Your baby goth is alive 👻</p>
+  <p id="hint">Tip: Your goth becomes an adult after 30s — keep its stats up.</p>
+
+  <div id="revival-flash"></div>
+
+  <!-- START overlay: heavy blur so only START stands out -->
+  <div id="startOverlay" aria-hidden="false">
+    <div class="start-card" role="dialog" aria-modal="true" aria-label="Start game">
+      <div class="start-title">Tamagothchi Ghost</div>
+      <div class="start-sub">Click START to summon your goth</div>
+      <button id="startBtn" class="start-btn pulse">START</button>
+    </div>
+  </div>
+
+  <!-- audio -->
+  <audio id="bg-music" src="Tamagothchi-Song.mp3" preload="auto" loop></audio>
+
+  <script>
+    /* --- config --- */
+    const GROW_SECONDS = 30;
+    const TICK_MS = 1000;
+    const DECAY_PER_TICK = 0.5;
+
+    /* --- state --- */
+    let hunger = 50, happiness = 50, energy = 50, age = 0;
+    let loop = null, actionTimeout = null, isDead = false;
+    let started = false;
+    const bgMusic = document.getElementById('bg-music');
+    let musicPlaying = false;
+
+    /* --- dom --- */
+    const hungerFill = document.getElementById('hunger-fill');
+    const happinessFill = document.getElementById('happiness-fill');
+    const energyFill = document.getElementById('energy-fill');
+    const statusText = document.getElementById('status');
+    const petImg = document.getElementById('pet');
+    const controls = document.getElementById('controls');
+    const restartWrapper = document.getElementById('restart');
+    const flash = document.getElementById('revival-flash');
+    const caption = document.getElementById('caption');
+    const bars = document.querySelectorAll('.bar');
+    const fills = document.querySelectorAll('.fill');
+    const labels = [document.getElementById('hunger-label'), document.getElementById('happiness-label'), document.getElementById('energy-label')];
+    const hint = document.getElementById('hint');
+    const musicBtn = document.getElementById('musicToggle');
+
+    const startOverlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startBtn');
+
+    /* --- hint timers --- */
+    let showHintTimer = null, hideHintTimer = null;
+    function scheduleHint() {
+      if (showHintTimer) clearTimeout(showHintTimer);
+      if (hideHintTimer) clearTimeout(hideHintTimer);
+      showHintTimer = setTimeout(()=>{
+        hint.classList.add('visible');
+        hideHintTimer = setTimeout(()=> hint.classList.remove('visible'), 6000);
+      }, 10000);
+    }
+
+    /* --- UI helpers --- */
+    function updateBars() {
+      hungerFill.style.width = hunger + '%';
+      happinessFill.style.width = happiness + '%';
+      energyFill.style.width = energy + '%';
+    }
+    function animateButtonPress(btn){
+      btn.classList.add('btn-press');
+      setTimeout(()=> btn.classList.remove('btn-press'), 180);
+    }
+    function animatePetDance(){
+      petImg.classList.remove('dance');
+      void petImg.offsetWidth;
+      petImg.classList.add('dance');
+    }
+
+    /* --- gif helper --- */
+    function changePetGif(action) {
+      if (isDead) return;
+      const stage = age >= GROW_SECONDS ? 'adult' : 'baby';
+      petImg.src = `${stage}-ghost-${action}.gif`;
+      if (actionTimeout) { clearTimeout(actionTimeout); actionTimeout = null; }
+      actionTimeout = setTimeout(()=>{
+        if (isDead) return;
+        petImg.src = `${stage}-ghost-mov.gif`;
+        actionTimeout = null;
+      }, 3000);
+    }
+
+    /* --- actions --- */
+    function feed() {
+      if (!started || isDead) return;
+      hunger = Math.min(100, hunger + 20);
+      energy = Math.max(0, energy - 5);
+      changePetGif('eat'); updateBars();
+      animateButtonPress(document.getElementById('feedBtn'));
+      animatePetDance();
+      statusText.textContent = "You fed your goth.";
+    }
+    function playAction() {
+      if (!started || isDead) return;
+      happiness = Math.min(100, happiness + 20);
+      hunger = Math.max(0, hunger - 10);
+      energy = Math.max(0, energy - 10);
+      changePetGif('fun'); updateBars();
+      animateButtonPress(document.getElementById('playBtn'));
+      animatePetDance();
+      statusText.textContent = "Playtime — mood up.";
+    }
+    function sleepAction() {
+      if (!started || isDead) return;
+      energy = Math.min(100, energy + 30);
+      hunger = Math.max(0, hunger - 5);
+      changePetGif('sleep'); updateBars();
+      animateButtonPress(document.getElementById('sleepBtn'));
+      animatePetDance();
+      statusText.textContent = "Nap taken — energy rising.";
+    }
+
+    /* --- die / revive --- */
+    function die() {
+      isDead = true;
+      statusText.textContent = '💀 Your goth has faded away…';
+      if (loop) { clearInterval(loop); loop = null; }
+      if (actionTimeout) { clearTimeout(actionTimeout); actionTimeout = null; }
+      petImg.src = 'grave.gif';
+      controls.style.display = 'none';
+      restartWrapper.style.display = 'block';
+      bars.forEach(b => b.classList.add('gray'));
+      fills.forEach(f => f.classList.add('gray'));
+      labels.forEach(l => l.classList.add('gray'));
+      caption.style.display = 'block';
+      if (!bgMusic.paused) bgMusic.pause();
+      if (showHintTimer) { clearTimeout(showHintTimer); showHintTimer = null; }
+      if (hideHintTimer) { clearTimeout(hideHintTimer); hideHintTimer = null; }
+      hint.classList.remove('visible');
+      statusText.classList.add('dead-gap'); hint.classList.add('dead-gap');
+    }
+
+    function restartGame() {
+      if (actionTimeout) { clearTimeout(actionTimeout); actionTimeout = null; }
+      flash.classList.add('flash'); petImg.style.opacity = 0;
+      setTimeout(()=>{
+        hunger = 50; happiness = 50; energy = 50; age = 0; isDead = false;
+        updateBars();
+        statusText.textContent = 'Your baby goth is alive again 👻';
+        petImg.src = 'baby-ghost-mov.gif'; petImg.style.opacity = 1;
+        controls.style.display = 'block'; restartWrapper.style.display = 'none';
+        bars.forEach(b => b.classList.remove('gray'));
+        fills.forEach(f => f.classList.remove('gray'));
+        labels.forEach(l => l.classList.remove('gray'));
+        caption.style.display = 'none';
+        statusText.classList.remove('dead-gap'); hint.classList.remove('dead-gap');
+        if (!loop && started) loop = setInterval(gameLoop, TICK_MS);
+        if (musicPlaying) {
+          const p = bgMusic.play();
+          if (p && p.catch) p.catch(()=>{});
+        }
+        scheduleHint();
+        setTimeout(()=>flash.classList.remove('flash'),1000);
+      }, 900);
+    }
+
+    /* --- main loop --- */
+    function gameLoop() {
+      if (isDead || !started) return;
+      age++;
+      hunger = Math.max(0, hunger - DECAY_PER_TICK);
+      happiness = Math.max(0, happiness - DECAY_PER_TICK);
+      energy = Math.max(0, energy - DECAY_PER_TICK);
+      updateBars();
+      if (hunger <= 0 || happiness <= 0 || energy <= 0) die();
+      else statusText.textContent = `Your ${age >= GROW_SECONDS ? 'adult' : 'baby'} goth is alive 👻`;
+    }
+
+    /* --- start reveal: heavy-blur overlay, only START visible --- */
+    function startGameReveal(){
+      started = true;
+      // fade overlay out
+      startOverlay.classList.add('overlay-fade');
+      setTimeout(()=>{
+        startOverlay.style.display = 'none';
+      }, 620);
+      // reveal pet
+      petImg.style.opacity = 0;
+      petImg.classList.add('ghost-appear');
+      setTimeout(()=>{ petImg.style.opacity = 1; petImg.classList.remove('ghost-appear'); }, 360);
+      // enable controls and start loop
+      controls.querySelectorAll('button').forEach(b=>b.disabled=false);
+      if (!loop) loop = setInterval(gameLoop, TICK_MS);
+      scheduleHint();
+    }
+
+    /* --- music toggle --- */
+    function toggleMusic() {
+      musicPlaying = !musicPlaying;
+      musicBtn.textContent = musicPlaying ? '♪ Music: On' : '♪ Music: Off';
+      if (musicPlaying) {
+        const p = bgMusic.play();
+        if (p && p.catch) p.catch(err => { console.warn('play blocked', err); });
+      } else bgMusic.pause();
+    }
+
+    /* --- bind events --- */
+    document.getElementById('feedBtn').addEventListener('click', feed);
+    document.getElementById('playBtn').addEventListener('click', playAction);
+    document.getElementById('sleepBtn').addEventListener('click', sleepAction);
+    document.getElementById('restartBtn').addEventListener('click', restartGame);
+    musicBtn.addEventListener('click', toggleMusic);
+    startBtn.addEventListener('click', startGameReveal);
+
+    /* --- init --- */
+    // controls disabled until START
+    controls.querySelectorAll('button').forEach(b=>b.disabled=true);
+    updateBars();
+    // loop will start after startBtn pressed
+  </script>
+</body>
+</html>
