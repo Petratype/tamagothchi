@@ -1,0 +1,169 @@
+/* Basic layout */
+:root {
+  --bg: #000;
+  --fg: #32ff00; /* limegreen */
+  --muted: gray;
+  --btn-padding: 0.65em 1.3em;
+}
+
+* { box-sizing: border-box; }
+html,body { height: 100%; margin: 0; }
+
+body {
+  font-family: monospace;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 14px;
+  overflow: hidden;
+}
+
+/* START OVERLAY */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  color: var(--fg);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index: 999;
+}
+.overlay h1 { font-size: 2rem; margin-bottom: 18px; }
+.overlay button {
+  background: black;
+  color: var(--fg);
+  border: 1px solid var(--fg);
+  padding: 0.7em 1.4em;
+  cursor: pointer;
+}
+
+/* STATS (top row) */
+.stats {
+  display:flex;
+  gap: 18px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.stat { display:flex; flex-direction:column; align-items:flex-start; }
+
+/* Bar style */
+.bar {
+  width: 140px;
+  height: 22px;
+  border: 1px solid var(--fg);
+  margin-top: 6px;
+  background: transparent;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  width: 50%;
+  background: var(--fg);
+  transition: width 0.25s linear;
+}
+
+/* PET area */
+.pet-container {
+  flex: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width: 100%;
+  position: relative;
+  min-height: 240px;
+}
+#pet {
+  width: 180px;
+  height: auto;
+  image-rendering: pixelated;
+  opacity: 1;
+  display: block;
+}
+
+/* Controls line (centered bottom-ish) */
+.controls {
+  display:flex;
+  gap: 14px;
+  margin-top: 12px;
+  margin-bottom: 64px; /* reserve space so pause doesn't overlap */
+  align-items: center;
+  justify-content: center;
+}
+.controls button {
+  background: black;
+  color: var(--fg);
+  border: 1px solid var(--fg);
+  padding: var(--btn-padding);
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+.controls button:hover {
+  background: var(--fg);
+  color: black;
+}
+
+/* Status & hint */
+.status { margin-top: 6px; color: var(--fg); }
+.hint { margin-top: 6px; color: gray; opacity: 0.9; }
+
+/* Right column (top and bottom) */
+.right-column {
+  position: fixed;
+  right: 10px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+}
+.top-right { top: 10px; }
+.bottom-right { bottom: 10px; }
+
+/* Corner button shared aesthetic */
+.corner-button {
+  background: black;
+  color: var(--fg);
+  border: 1px solid var(--fg);
+  padding: 0.45em 0.9em;
+  cursor: pointer;
+}
+.corner-button:hover { background: var(--fg); color: black; }
+
+/* Restart */
+.restart { display:none; margin-top: 12px; }
+
+/* Pause symbol */
+.pause-symbol {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  font-weight: bold;
+  font-family: "Press Start 2P", monospace; /* retro gaming font */
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(220, 220, 220, 0.9); /* outline */
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.8); /* soft glow for contrast */
+  display: none;
+  pointer-events: none;
+}
+
+
+/* PAUSED STATE - everything grey */
+.paused-overlay * {
+  color: var(--muted) !important;
+  border-color: var(--muted) !important;
+  background-color: black !important;
+}
+.paused-overlay .fill { background: var(--muted) !important; }
+
+/* small responsive tweak to ensure everything fits on smaller screens */
+@media (max-height: 600px) {
+  .pet-container { min-height: 160px; }
+  .controls { margin-bottom: 48px; }
+}
